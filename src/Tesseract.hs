@@ -36,20 +36,25 @@ square length center rotation
 
 -- |Rotate a 3d polygon by the angles a and b around the x and the y axis.
 -- where for the angles a and b holds: 1 = 90°, 2 = 180°
-rotate3d :: (Float, Float) -> Polygon Vec3 -> Polygon Vec3
-rotate3d (a,b) = fmap $ rotate3 (pi/2*b) (Vec3 0 1 0) 
-                      . rotate3 (pi/2*a) (Vec3 1 0 0)
+rotate3xy :: (Float, Float) -> Vec3 -> Vec3
+rotate3xy (a,b) = rotate3 (pi/2*b) (Vec3 0 1 0) 
+                . rotate3 (pi/2*a) (Vec3 1 0 0)
+
+translate3 :: Vec3 -> Vec3 -> Vec3
+translate3 = (&+)
+
+stretch3 :: Float -> Vec3 -> Vec3
+stretch3 = (*&)
 
 -- |A cube of length, position and rotation represented by a list of Vec3 
 -- polygons
-cube :: Float -> Vec3 -> Rot3 -> Body Vec3
-cube length center (Rot3 axis rotation) 
-    = case len axis == 0 || rotation == 0 
-      of True  -> sides -- No rotation
-         False -> fmap (rotate3 rotation axis) sides
-      where sides = Body $ rotators <*> [side] :: Body Vec3
-            rotators = [rotate3d] <*> rotations
-            rotations = [(0,0),(-1,0),(1,0),(2,0),(0,-1),(0,1)]
-            -- Creates a side which is then replicated and rotated around
-            side = extendWith (length/2) $ square length (Vec2 0 0) 0 
+cube :: Body Vec3
+cube = Body $ rotators <*> [side]
+       where rotators = map fmap $ [rotate3xy] <*> rotations
+             rotations = [(0,0),(-1,0),(1,0),(2,0),(0,-1),(0,1)]
+             -- Creates a side which is then replicated and rotated around
+             side = extendWith (1/2) $ square 1 (Vec2 0 0) 0 
+
+transformedCube :: Float -> Vec3 -> Rot3 -> Body Vec3
+transformedCube x v (Rot3 a r) = fmap (rotate3 r a . translate3 v . stretch3 x) $ cube
 

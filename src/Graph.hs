@@ -29,7 +29,7 @@ animationSquare = T.square 80 (mkVec2 (0,0))
 
 
 animationCube :: Float -> T.Body Vec3
-animationCube r = T.cube 80 (mkVec3 (0,0,0)) (T.Rot3 (mkVec3 (0.2,0.2,0.2)) r)
+animationCube r = T.transformedCube 80 (mkVec3 (0,0,0)) (T.Rot3 (mkVec3 (0.2,0.2,0.2)) r)
 
 
 polygon2ToPicture :: T.Polygon Vec2 -> Picture
