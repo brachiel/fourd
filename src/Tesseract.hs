@@ -1,28 +1,31 @@
-{-# LANGUAGE FlexibleInstances, DeriveFunctor #-}
+{-# LANGUAGE FlexibleInstances, DeriveFunctor, MultiParamTypeClasses, FlexibleContexts #-}
 
 module Tesseract where
 
-import Data.Vect
+import Data.Vect hiding (project)
+import qualified Data.Vect as V
 import Data.Vect.Float.Util.Dim4
 
 data Polygon a = Polygon [a] deriving (Show, Functor)
 data Body a = Body [Polygon a] deriving (Show, Functor)
 
 data Rot3 = Rot3 Vec3 Float
+noRot3 = Rot3 (Vec3 0 0 0) 0
 
-class Embeddable3 a where
-    embed :: Float -> a -> Polygon Vec3
+instance (Extend a b, Functor f) => Extend (f a) (f b) where
+    extendZero = extendWith 0
+    extendWith z = fmap (extendWith z)
+    trim = fmap trim
 
-instance Embeddable3 (Polygon Vec2) where
-    embed z = fmap embedV
-            where embedV (Vec2 x y) = Vec3 x y z
 
-class Projectable2 a where
-    proj :: a -> Polygon Vec2
+class Flattable f a where
+    flatten :: f a -> f Vec2
 
-instance Projectable2 (Polygon Vec3) where
-    proj = fmap $ dropZ . flip project (Vec3 0 0 1)
-           where dropZ (Vec3 x y _) = Vec2 x y
+instance Functor f => Flattable f Vec3 where
+    flatten = trim
+
+instance Flattable Body Vec4 where
+    flatten = trim . (trim :: Body Vec4 -> Body Vec3)
 
 -- https://en.wikipedia.org/wiki/Rotations_in_4-dimensional_Euclidean_space
 
@@ -41,10 +44,12 @@ rotate3d (a,b) = fmap $ rotate3 (pi/2*b) (Vec3 0 1 0)
 -- polygons
 cube :: Float -> Vec3 -> Rot3 -> Body Vec3
 cube length center (Rot3 axis rotation) 
-    = fmap (rotate3 rotation axis) sides
+    = case len axis == 0 || rotation == 0 
+      of True  -> sides -- No rotation
+         False -> fmap (rotate3 rotation axis) sides
       where sides = Body $ rotators <*> [side] :: Body Vec3
             rotators = [rotate3d] <*> rotations
             rotations = [(0,0),(-1,0),(1,0),(2,0),(0,-1),(0,1)]
             -- Creates a side which is then replicated and rotated around
-            side = embed (length/2) $ square length (Vec2 0 0) 0 
+            side = extendWith (length/2) $ square length (Vec2 0 0) 0 
 

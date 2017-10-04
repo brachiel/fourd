@@ -37,5 +37,5 @@ polygon2ToPicture (T.Polygon vs) = Line $ map unbox (vs ++ [head vs])
                                    where unbox (Vec2 x y) = (x,y)
 
 body3ToPicture :: T.Body Vec3 -> Picture
-body3ToPicture (T.Body vs) = Pictures $ map (polygon2ToPicture . T.proj) vs
+body3ToPicture (T.Body vs) = Pictures $ map (polygon2ToPicture . T.flatten) vs
 
